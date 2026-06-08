@@ -164,6 +164,92 @@ func ClearTokenCookie(w http.ResponseWriter, r *http.Request, cluster, baseURL s
 		}
 		http.SetCookie(w, cookie)
 	}
+
+	// Also clear the ID token cookie
+	ClearIDTokenCookie(w, r, cluster, baseURL)
+}
+
+// SetIDTokenCookie sets an ID token cookie for a specific cluster.
+// This is used for OIDC RP-initiated logout (id_token_hint parameter).
+// The cookie path is set to "/" so it's available on the /oidc-logout endpoint.
+func SetIDTokenCookie(w http.ResponseWriter, r *http.Request, cluster, idToken, baseURL string, sessionTTL int) {
+	if cluster == "" || idToken == "" {
+		return
+	}
+
+	sanitizedCluster := SanitizeClusterName(cluster)
+	if sanitizedCluster == "" {
+		return
+	}
+
+	secure := IsSecureContext(r)
+
+	// Use root path so the cookie is sent to /oidc-logout
+	cookiePath := "/"
+	if baseURL != "" {
+		cookiePath = "/" + strings.Trim(baseURL, "/") + "/"
+	}
+
+	cookie := &http.Cookie{
+		Name:     fmt.Sprintf("headlamp-id-token-%s", sanitizedCluster),
+		Value:    idToken,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+		Path:     cookiePath,
+		MaxAge:   sessionTTL,
+	}
+
+	http.SetCookie(w, cookie)
+}
+
+// GetIDTokenFromCookie retrieves the ID token cookie for a specific cluster.
+func GetIDTokenFromCookie(r *http.Request, cluster string) (string, error) {
+	sanitizedCluster := SanitizeClusterName(cluster)
+	if sanitizedCluster == "" {
+		return "", errors.New("invalid cluster name")
+	}
+
+	cookie, err := r.Cookie(fmt.Sprintf("headlamp-id-token-%s", sanitizedCluster))
+	if err != nil {
+		return "", err
+	}
+
+	return cookie.Value, nil
+}
+
+// ClearIDTokenCookie clears the ID token cookie for a specific cluster.
+func ClearIDTokenCookie(w http.ResponseWriter, r *http.Request, cluster, baseURL string) {
+	sanitizedCluster := SanitizeClusterName(cluster)
+	if sanitizedCluster == "" {
+		return
+	}
+
+	// Only clear if the cookie exists on the request
+	_, err := r.Cookie(fmt.Sprintf("headlamp-id-token-%s", sanitizedCluster))
+	if err != nil {
+		return
+	}
+
+	secure := IsSecureContext(r)
+
+	// Use root path to match SetIDTokenCookie
+	cookiePath := "/"
+	if baseURL != "" {
+		cookiePath = "/" + strings.Trim(baseURL, "/") + "/"
+	}
+
+	cookie := &http.Cookie{
+		Name:     fmt.Sprintf("headlamp-id-token-%s", sanitizedCluster),
+		Value:    "",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+		Path:     cookiePath,
+		MaxAge:   -1,
+	}
+
+	http.SetCookie(w, cookie)
 }
 
 // splitToken splits a token into chunks of a given size.
