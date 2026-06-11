@@ -1120,6 +1120,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 			logger.Log(logger.LevelInfo, map[string]string{"cluster": cluster},
 				nil, "oidc-logout: disabled, clearing cookie and redirecting")
 			auth.ClearTokenCookie(w, r, cluster, config.BaseURL)
+			auth.ClearIDTokenCookie(w, r, cluster, config.BaseURL)
 			baseURL := strings.TrimRight(config.BaseURL, "/")
 			http.Redirect(w, r, fmt.Sprintf("%s/c/%s/login", baseURL, url.PathEscape(cluster)), http.StatusFound)
 
@@ -1172,6 +1173,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 				err, "failed to get provider for logout")
 			// Fall back to just clearing the cookie and redirecting to home
 			auth.ClearTokenCookie(w, r, cluster, config.BaseURL)
+			auth.ClearIDTokenCookie(w, r, cluster, config.BaseURL)
 			http.Redirect(w, r, strings.TrimRight(config.BaseURL, "/")+"/", http.StatusFound)
 
 			return
@@ -1185,6 +1187,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 		if err := provider.Claims(&providerClaims); err != nil {
 			logger.Log(logger.LevelError, nil, err, "failed to get provider claims")
 			auth.ClearTokenCookie(w, r, cluster, config.BaseURL)
+			auth.ClearIDTokenCookie(w, r, cluster, config.BaseURL)
 			http.Redirect(w, r, strings.TrimRight(config.BaseURL, "/")+"/", http.StatusFound)
 
 			return

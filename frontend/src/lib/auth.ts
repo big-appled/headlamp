@@ -150,6 +150,13 @@ export async function logout(cluster: string) {
     queryClient.removeQueries({ queryKey: ['auth'], exact: false });
     queryClient.removeQueries({ queryKey: ['clusterMe', cluster], exact: true });
 
+    // Clear the cluster auth cookie before redirecting (cookie path is cluster-scoped).
+    try {
+      await setToken(cluster, null);
+    } catch {
+      // Continue with logout redirect even if cookie clearing fails.
+    }
+
     // Redirect to the OIDC logout endpoint
     // The backend will clear cookies and redirect to the IdP logout endpoint
     window.location.href = `${getAppUrl()}oidc-logout?cluster=${encodeURIComponent(cluster)}`;
