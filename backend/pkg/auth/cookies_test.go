@@ -374,6 +374,7 @@ func TestClearIDTokenCookie(t *testing.T) {
 		Name:     "headlamp-id-token-test-cluster.0",
 		Value:    "test-id-token",
 		HttpOnly: true,
+		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		MaxAge:   86400,

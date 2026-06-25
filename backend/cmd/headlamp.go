@@ -1129,7 +1129,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 		// Try to get id_token from oauth2 token extras first
 		rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 		logger.Log(logger.LevelInfo, map[string]string{
-			"cluster":         oauthConfig.Cluster,
+			logFieldCluster:   oauthConfig.Cluster,
 			"idTokenExtraOk":  fmt.Sprintf("%v", ok),
 			"tokenType":       tokenType,
 			"rawUserTokenLen": fmt.Sprintf("%d", len(rawUserToken)),
@@ -1141,7 +1141,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 				rawIDToken = rawUserToken
 
 				logger.Log(logger.LevelInfo, map[string]string{
-					"cluster": oauthConfig.Cluster,
+					logFieldCluster: oauthConfig.Cluster,
 				}, nil, "oidc-callback: using rawUserToken as ID token fallback")
 			}
 		}
@@ -1149,12 +1149,12 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 		if rawIDToken != "" {
 			auth.SetIDTokenCookie(w, r, oauthConfig.Cluster, rawIDToken, config.BaseURL, config.SessionTTL)
 			logger.Log(logger.LevelInfo, map[string]string{
-				"cluster":       oauthConfig.Cluster,
+				logFieldCluster: oauthConfig.Cluster,
 				"rawIDTokenLen": fmt.Sprintf("%d", len(rawIDToken)),
 			}, nil, "oidc-callback: ID token cookie saved")
 		} else {
 			logger.Log(logger.LevelWarn, map[string]string{
-				"cluster": oauthConfig.Cluster,
+				logFieldCluster: oauthConfig.Cluster,
 			}, nil, "oidc-callback: no ID token available to save")
 		}
 
@@ -1168,7 +1168,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 
 		// If OIDC logout is disabled, just clear the cookie and redirect to login
 		if config.OidcSkipLogout {
-			logger.Log(logger.LevelInfo, map[string]string{"cluster": cluster},
+			logger.Log(logger.LevelInfo, map[string]string{logFieldCluster: cluster},
 				nil, "oidc-logout: disabled, clearing cookie and redirecting")
 			auth.ClearTokenCookie(w, r, cluster, config.BaseURL)
 			auth.ClearIDTokenCookie(w, r, cluster, config.BaseURL)
@@ -1180,7 +1180,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 
 		kContext, err := config.KubeConfigStore.GetContext(cluster)
 		if err != nil {
-			logger.Log(logger.LevelError, map[string]string{"cluster": cluster},
+			logger.Log(logger.LevelError, map[string]string{logFieldCluster: cluster},
 				err, "failed to get context for oidc logout")
 			http.NotFound(w, r)
 
@@ -1189,7 +1189,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 
 		oidcAuthConfig, err := kContext.OidcConfig()
 		if err != nil {
-			logger.Log(logger.LevelError, map[string]string{"cluster": cluster},
+			logger.Log(logger.LevelError, map[string]string{logFieldCluster: cluster},
 				err, "failed to get oidc config for logout")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
@@ -1220,7 +1220,8 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 		// Discover the provider's end_session_endpoint
 		provider, err := oidc.NewProvider(ctx, oidcAuthConfig.IdpIssuerURL)
 		if err != nil {
-			logger.Log(logger.LevelError, map[string]string{"idpIssuerURL": oidcAuthConfig.IdpIssuerURL},
+			logger.Log(logger.LevelError,
+				map[string]string{logFieldCluster: cluster, "idpIssuerURL": oidcAuthConfig.IdpIssuerURL},
 				err, "failed to get provider for logout")
 			// Fall back to just clearing the cookie and redirecting to home
 			auth.ClearTokenCookie(w, r, cluster, config.BaseURL)
@@ -1249,7 +1250,8 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 		if idTokenErr != nil && !errors.Is(idTokenErr, http.ErrNoCookie) {
 			logger.Log(logger.LevelError, nil, idTokenErr, "failed to get ID token from cookie")
 		} else if errors.Is(idTokenErr, http.ErrNoCookie) {
-			logger.Log(logger.LevelWarn, map[string]string{"cluster": cluster}, nil, "oidc-logout: no ID token cookie found")
+			logger.Log(logger.LevelWarn,
+				map[string]string{logFieldCluster: cluster}, nil, "oidc-logout: no ID token cookie found")
 		}
 
 		// Clear the auth cookie regardless of whether end_session_endpoint is available
@@ -1257,7 +1259,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 		auth.ClearIDTokenCookie(w, r, cluster, config.BaseURL)
 
 		if providerClaims.EndSessionEndpoint == "" {
-			logger.Log(logger.LevelWarn, map[string]string{"cluster": cluster},
+			logger.Log(logger.LevelWarn, map[string]string{logFieldCluster: cluster},
 				nil, "oidc-logout: no end_session_endpoint found, redirecting to home")
 			http.Redirect(w, r, strings.TrimRight(config.BaseURL, "/")+"/", http.StatusFound)
 
@@ -1291,7 +1293,7 @@ func createHeadlampHandler(ctx context.Context, config *HeadlampConfig) http.Han
 
 		if idToken == "" {
 			logger.Log(logger.LevelWarn, map[string]string{
-				"cluster": cluster,
+				logFieldCluster: cluster,
 			}, nil, "oidc-logout: no id_token_hint available")
 		} else {
 			query.Set("id_token_hint", idToken)
