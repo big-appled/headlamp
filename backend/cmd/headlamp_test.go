@@ -3915,13 +3915,13 @@ func getOIDCLogoutTestCases(t *testing.T, testCluster string) []oidcLogoutTestCa
 			expectIDTokenCookieCleared: true,
 		},
 		{
-			name:                       "OidcSkipLogout=true clears auth cookie even when not present",
+			name:                       "OidcSkipLogout=true clears cookies with correct path",
 			oidcSkipLogout:             true,
-			setIDTokenCookie:           false,
+			setIDTokenCookie:           true,
 			expectedStatusCode:         http.StatusFound,
 			expectedRedirectContains:   "/c/" + testCluster + "/login",
 			expectTokenCookieCleared:   true,
-			expectIDTokenCookieCleared: false,
+			expectIDTokenCookieCleared: true,
 		},
 		{
 			name: "provider discovery failure clears cookies and redirects to home",
@@ -4054,7 +4054,7 @@ func runOIDCLogoutTest(t *testing.T, cluster string, tc oidcLogoutTestCase) *htt
 	handler := createHeadlampHandler(context.Background(), cfg)
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
-		"/oidc-logout?cluster="+url.QueryEscape(cluster), nil)
+		"/clusters/"+url.PathEscape(cluster)+"/oidc-logout", nil)
 	require.NoError(t, err)
 
 	if tc.setIDTokenCookie {
@@ -4066,7 +4066,7 @@ func runOIDCLogoutTest(t *testing.T, cluster string, tc oidcLogoutTestCase) *htt
 		req.AddCookie(&http.Cookie{
 			Name:  "headlamp-auth-" + cluster + ".0",
 			Value: "test-auth-token",
-			Path:  "/",
+			Path:  "/clusters/" + cluster,
 		})
 	}
 

@@ -165,7 +165,7 @@ export async function logout(cluster: string, skipRedirect = false): Promise<boo
 
     // Redirect to the OIDC logout endpoint
     // The backend will clear cookies and redirect to the IdP logout endpoint
-    window.location.href = `${getAppUrl()}oidc-logout?cluster=${encodeURIComponent(cluster)}`;
+    window.location.href = `${getAppUrl()}clusters/${encodeURIComponent(cluster)}/oidc-logout`;
     return false;
   }
 
@@ -196,8 +196,8 @@ export async function deleteTokens() {
   );
 
   if (lastOIDCCluster) {
-    window.location.href = `${getAppUrl()}oidc-logout?cluster=${encodeURIComponent(
+    window.location.href = `${getAppUrl()}clusters/${encodeURIComponent(
       lastOIDCCluster
-    )}`;
+    )}/oidc-logout`;
   }
 }

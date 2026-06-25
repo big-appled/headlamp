@@ -149,9 +149,9 @@ export default function TopBar({}: TopBarProps) {
       );
 
       if (oidcClusterToRedirect) {
-        window.location.href = `${getAppUrl()}oidc-logout?cluster=${encodeURIComponent(
+        window.location.href = `${getAppUrl()}clusters/${encodeURIComponent(
           oidcClusterToRedirect
-        )}`;
+        )}/oidc-logout`;
       }
     },
     [cluster, selectedClusters, history]
