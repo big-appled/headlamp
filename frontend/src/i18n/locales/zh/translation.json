@@ -1,11 +1,11 @@
 {
   "Whoops! This page doesn't exist": "",
   "Authentication: {{ clusterName }}": "",
-  "Authentication": "",
+  "Authentication": "认证",
   "Please paste your authentication token.": "",
   "ID token": "",
   "Check out how to generate a<1>service account token</1>.": "",
-  "Cluster settings": "",
+  "Cluster settings": "集群设置",
   "Cancel": "",
   "Authenticate": "",
   "Error authenticating": "",
